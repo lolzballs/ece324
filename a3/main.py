@@ -31,6 +31,8 @@ seed = 0
 
 ######
 
+data = pd.read_csv('data/adult.csv')
+
 # =================================== DATA VISUALIZATION =========================================== #
 
 # the dataset is imported as a DataFrame object, for more information refer to

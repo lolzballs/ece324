@@ -54,9 +54,9 @@ print(test_set['label'].value_counts())
 
 print(f'{len(objective)} objective and {len(subjective)} subjective samples left over')
 
-train_set.to_csv('./data/train.tsv', sep='\t')
-val_set.to_csv('./data/validation.tsv', sep='\t')
-test_set.to_csv('./data/test.tsv', sep='\t')
-overfit_set.to_csv('./data/overfit.tsv', sep='\t')
+train_set.to_csv('./data/train.tsv', sep='\t', index=False)
+val_set.to_csv('./data/validation.tsv', sep='\t', index=False)
+test_set.to_csv('./data/test.tsv', sep='\t', index=False)
+overfit_set.to_csv('./data/overfit.tsv', sep='\t', index=False)
 
 

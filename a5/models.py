@@ -30,12 +30,11 @@ class CNN(nn.Module):
 
     def forward(self, x, lengths):
         embeddings = self.embedding(x).transpose(0, 1).unsqueeze(1) # [L, B, E] -> [B, 1, L, E]
-        length = embeddings.size(2)
 
         filter_2 = F.relu(self.conv_2(embeddings)) # [B, 50, L, 1]
-        filter_2 = F.max_pool1d(filter_2.squeeze(3), length)
+        filter_2 = F.max_pool1d(filter_2.squeeze(3), filter_2.size(2))
         filter_4 = F.relu(self.conv_4(embeddings)) # [B, 50, L, 1]
-        filter_4 = F.max_pool1d(filter_4.squeeze(3), length)
+        filter_4 = F.max_pool1d(filter_4.squeeze(3), filter_4.size(2))
 
         x = torch.cat((filter_2, filter_4), dim=1)
         x = x.view(-1, 50 * 2)

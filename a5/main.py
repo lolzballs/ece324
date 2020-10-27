@@ -50,6 +50,7 @@ def load_dataset(overfit, batch_size, device):
     else:
         train_data = torchtext.data.TabularDataset('./data/overfit.tsv', format='tsv',
                 skip_header=True, fields=fields)
+        field_text.build_vocab(train_data)
         iters = (
             torchtext.data.BucketIterator(
                 train_data, batch_size, sort_key=lambda x: len(x.text),
@@ -59,7 +60,6 @@ def load_dataset(overfit, batch_size, device):
             None
         )
 
-    field_text.build_vocab(train_data)
     field_text.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
     return field_text.vocab, iters
 
@@ -177,17 +177,17 @@ def main(model_name, lr, epochs, batch_size, overfit, test, device):
 
     model_file = get_model_name(overfit, model_name, lr, batch_size, epochs)
 
-    plot_history(*history)
-    plt.savefig(f'figures/{model_file}.svg')
-
-    torch.save(model, f'models/{model_file}.pt')
-
     print('Max validation accuracy:', np.max(history[3]))
     print('Trained in:', end - start)
     
     if test:
         accuracy = test_model(model, iters[2])
         print('Testing accuracy:', accuracy)
+
+    plot_history(*history)
+    plt.savefig(f'figures/{model_file}.svg')
+
+    torch.save(model.cpu(), f'models/{model_file}.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

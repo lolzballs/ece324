@@ -61,9 +61,29 @@ class RNN(nn.Module):
 
         return x
 
+class RNNUnpadded(nn.Module):
+    def __init__(self, vocab):
+        super(RNNUnpadded, self).__init__()
+        self.embedding_dim = vocab.vectors.size(1)
+        self.embedding = nn.Embedding.from_pretrained(vocab.vectors)
+
+        self.gru = nn.GRU(self.embedding_dim, 100)
+        self.fc = nn.Linear(100, 1)
+
+    def forward(self, x, lengths):
+        embeddings = self.embedding(x)
+
+        _, hidden = self.gru(embeddings)
+        hidden = hidden.squeeze(0)
+        x = self.fc(hidden).squeeze(1)
+
+        return x
+
+
 CLASS_DICT = {
     'baseline': Baseline,
     'cnn': CNN,
     'rnn': RNN,
+    'rnn_unpadded': RNNUnpadded,
 }
 

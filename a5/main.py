@@ -27,10 +27,12 @@ def plot_history(train_loss, train_acc, val_loss, val_acc):
         plt.xlabel('epoch')
         plt.legend()
 
-def load_dataset(overfit, batch_size, device):
+def load_dataset(overfit, bucket, batch_size, device):
     field_text = torchtext.data.Field(sequential=True, lower=True, tokenize='spacy', include_lengths=True)
     field_label = torchtext.data.Field(sequential=False, use_vocab=False)
     fields = [('text', field_text), ('label', field_label)]
+
+    iter_cls = torchtext.data.BucketIterator if bucket else torchtext.data.Iterator
 
     if not overfit:
         train_data, val_data, test_data = torchtext.data.TabularDataset.splits(
@@ -38,7 +40,7 @@ def load_dataset(overfit, batch_size, device):
                 format='TSV', skip_header=True, fields=fields,
         )
         field_text.build_vocab(train_data, val_data, test_data)
-        iters = torchtext.data.BucketIterator.splits(
+        iters = iter_cls.splits(
                 (train_data, val_data, test_data),
                 batch_sizes=(batch_size, batch_size, batch_size),
                 sort_key=lambda x: len(x.text),
@@ -52,7 +54,7 @@ def load_dataset(overfit, batch_size, device):
                 skip_header=True, fields=fields)
         field_text.build_vocab(train_data)
         iters = (
-            torchtext.data.BucketIterator(
+            iter_cls(
                 train_data, batch_size, sort_key=lambda x: len(x.text),
                 device=device, sort_within_batch=True, repeat=False
             ),
@@ -162,10 +164,10 @@ def train_model(model, iters, lr, epochs):
 
     return train_loss, train_acc, val_loss, val_acc
 
-def main(model_name, lr, epochs, batch_size, overfit, test, device):
+def main(model_name, lr, epochs, batch_size, overfit, bucket, test, device):
     print('Training on', device)
 
-    vocab, iters = load_dataset(overfit, batch_size, device)
+    vocab, iters = load_dataset(overfit, bucket, batch_size, device)
     print('Shape of vocab:', vocab.vectors.shape)
 
     model_cls = models.CLASS_DICT[model_name]
@@ -181,8 +183,12 @@ def main(model_name, lr, epochs, batch_size, overfit, test, device):
     print('Trained in:', end - start)
     
     if test:
-        accuracy = test_model(model, iters[2])
-        print('Testing accuracy:', accuracy)
+        loss, acc = validate_model(model, iters[0])
+        print(f'Training loss: {loss:.3f} \t acc: {acc:.3f}')
+        loss, acc = validate_model(model, iters[1])
+        print(f'Validation loss: {loss:.3f} \t acc: {acc:.3f}')
+        loss, acc = validate_model(model, iters[2])
+        print(f'Test loss: {loss:.3f} \t acc: {acc:.3f}')
 
     plot_history(*history)
     plt.savefig(f'figures/{model_file}.svg')
@@ -192,6 +198,7 @@ def main(model_name, lr, epochs, batch_size, overfit, test, device):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--no-bucket', dest='bucket', action='store_false', default=True)
     parser.add_argument('--overfit', action='store_true')
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--model', dest='model_name', type=str, required=True)
@@ -207,5 +214,5 @@ if __name__ == '__main__':
 
     plt.rcParams["figure.figsize"] = (10,5)
 
-    main(args.model_name, args.lr, args.epochs, args.batch_size, args.overfit, args.test, device)
+    main(args.model_name, args.lr, args.epochs, args.batch_size, args.overfit, args.bucket, args.test, device)
 
